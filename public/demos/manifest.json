@@ -1,0 +1,5 @@
+[
+  { "name": "smoke",          "href": "smoke.html",          "desc": "RAF sanity check (dot + trails)" },
+  { "name": "swarm",          "href": "swarm.html",          "desc": "600–800 agents, obvious motion" },
+  { "name": "verse-seed-min", "href": "verse_seed_min.html", "desc": "paste → lexicon → change" }
+]
