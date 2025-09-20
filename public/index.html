@@ -31,21 +31,77 @@
   <p class="sub">Open in a browser (Safari/Chrome). On iOS, tap once to wake animations.</p>
 </header>
 
-<main id="grid"></main>
+<div class="stage">
+  <iframe id="demoFrame" class="demo" src="" allow="autoplay; fullscreen"></iframe>
+</div>
 
-<footer>
-  Add files in <code>public/demos/</code> and register them below. Vercel serves from <code>public/</code>.
-</footer>
+<div class="infobar">
+  <div class="meta">
+    <div class="title" id="demoTitle">—</div>
+    <div class="sub" id="demoDesc">—</div>
+  </div>
+  <div class="dots" id="dots"></div>
+</div>
 
-<script>
-/* Register demos here. Path is relative to /public. */
-const demos = [
-  ["smoke",          "demos/smoke.html",          "RAF sanity check (dot + trails)"],
-  ["swarm",          "demos/swarm.html",          "600–800 agents, obvious motion"],
-  ["verse-seed-min", "demos/verse_seed_min.html", "paste → shape/feel change"],
-  // Add more:
-  // ["orb-cell v2","demos/verse_orb_cell_v2.html","orb membrane prototype"],
+  <script>
+/* Register demos here (path is relative to /public) */
+const DEMOS = [
+  { name: "smoke",          href: "demos/smoke.html",          desc: "RAF sanity check (dot + trails)" },
+  { name: "swarm",          href: "demos/swarm.html",          desc: "600–800 agents, obvious motion" },
+  { name: "verse-seed-min", href: "demos/verse_seed_min.html", desc: "paste → shape/feel change" },
 ];
+
+const frame   = document.getElementById('demoFrame');
+const titleEl = document.getElementById('demoTitle');
+const descEl  = document.getElementById('demoDesc');
+const dotsEl  = document.getElementById('dots');
+
+let idx = 0, touchX = 0, touchY = 0, dragging = false;
+
+function load(i){
+  idx = (i + DEMOS.length) % DEMOS.length;
+  const d = DEMOS[idx];
+  frame.src = d.href;
+  titleEl.textContent = d.name;
+  descEl.textContent  = d.desc;
+  renderDots();
+}
+
+function renderDots(){
+  dotsEl.innerHTML = DEMOS.map((_,i)=>
+    `<span class="dot ${i===idx?'active':''}" data-i="${i}"></span>`
+  ).join('');
+}
+
+function next(){ load(idx+1); }
+function prev(){ load(idx-1); }
+
+/* Click a dot to jump */
+dotsEl.addEventListener('click', e=>{
+  const t = e.target.closest('.dot'); if(!t) return;
+  load(parseInt(t.dataset.i,10));
+});
+
+/* Arrow keys */
+addEventListener('keydown', e=>{
+  if(e.key === 'ArrowRight') next();
+  if(e.key === 'ArrowLeft')  prev();
+});
+
+/* Pointer swipe (horizontal threshold, ignore vertical scrolls) */
+addEventListener('pointerdown', e=>{
+  dragging = true; touchX = e.clientX; touchY = e.clientY;
+});
+addEventListener('pointerup', e=>{
+  if(!dragging) return; dragging = false;
+  const dx = e.clientX - touchX, dy = Math.abs(e.clientY - touchY);
+  if(dy > Math.abs(dx)) return;           // treat vertical as scroll, not swipe
+  if(dx < -40) next(); else if(dx > 40) prev();
+});
+
+/* Initial load */
+load(0);
+</script>
 
 const grid = document.getElementById('grid');
 grid.innerHTML = demos.map(([name, href, desc]) => `
@@ -57,3 +113,24 @@ grid.innerHTML = demos.map(([name, href, desc]) => `
 </script>
 </body>
 </html>
+
+/* Swipe stage and info bar */
+.stage { position: fixed; inset: 0; background: var(--bg, #000); }
+iframe.demo { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+
+.infobar {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  background: var(--panel); backdrop-filter: blur(8px) saturate(1.05);
+  padding: 10px 12px;
+}
+.infobar .title { font-weight: 700; letter-spacing: .2px; }
+.infobar .sub   { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.dots { display: flex; gap: 8px; align-items: center; }
+.dot  { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--line); background: transparent; opacity: .7; }
+.dot.active { background: #fff; opacity: 1; }
+
+@media (max-width: 480px) {
+  .infobar { padding: 9px 10px; }
+}
