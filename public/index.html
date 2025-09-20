@@ -1,136 +1,129 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"/>
 <title>Verse Lab — Demos</title>
 <link rel="stylesheet" href="./style.css">
 <style>
-  /* Minimal page chrome; prefer tokens from style.css if present */
-  :root { color-scheme: dark; }
-  body{margin:0;background:var(--bg,#000);color:var(--ink,#fff);
-       font:16px/1.5 var(--font-ui,-apple-system,system-ui,Segoe UI,Roboto);}
-  header{max-width:960px;margin:24px auto 8px;padding:0 16px}
-  h1{margin:0 0 6px;font:600 18px var(--font-ui,-apple-system,system-ui);}
-  p.sub{margin:0;color:#a4acb5}
-  main{max-width:960px;margin:12px auto 48px;padding:0 16px;
-       display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-  a.card{display:block;text-decoration:none;color:inherit;
-         border:1px solid rgba(255,255,255,.14);border-radius:12px;
-         background:rgba(255,255,255,.03);padding:14px 16px}
-  a.card:hover{background:rgba(255,255,255,.06)}
-  .name{font-weight:600}
-  .desc{margin-top:4px;color:#a4acb5;font-size:13px}
-  footer{max-width:960px;margin:0 auto 28px;padding:0 16px;color:#8a93a0;font-size:12px}
-  code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+  /* Page-scoped bits (rest comes from style.css) */
+  .stage { position: fixed; inset: 0; background: var(--bg,#000); }
+  iframe.demo { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background:#000 }
+  .infobar{
+    position:fixed; left:12px; right:12px; bottom:12px; z-index:10;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:1px solid var(--line); border-radius:12px;
+    background:var(--panel); backdrop-filter:blur(8px) saturate(1.05);
+    padding:10px 12px;
+  }
+  .title{font-weight:700; letter-spacing:.2px}
+  .sub{color:var(--muted); font-size:13px; margin-top:2px}
+  .dots{display:flex; gap:8px; align-items:center}
+  .dot{width:8px; height:8px; border-radius:50%; border:1px solid var(--line); background:transparent; opacity:.7; cursor:pointer}
+  .dot.active{background:#fff; opacity:1}
 </style>
 </head>
 <body>
-<header>
-  <h1>Verse Lab — runnable demos</h1>
-  <p class="sub">Open in a browser (Safari/Chrome). On iOS, tap once to wake animations.</p>
-</header>
 
-<div class="stage">
-  <iframe id="demoFrame" class="demo" src="" allow="autoplay; fullscreen"></iframe>
+<!-- Full-bleed demo surface -->
+<div class="stage" id="stage">
+  <iframe id="demoFrame" class="demo" src="" allow="autoplay; fullscreen" title="demo"></iframe>
 </div>
 
-<div class="infobar">
+<!-- Bottom info bar (name • description • dots) -->
+<div class="infobar pad-safe">
   <div class="meta">
     <div class="title" id="demoTitle">—</div>
     <div class="sub" id="demoDesc">—</div>
   </div>
-  <div class="dots" id="dots"></div>
+  <div class="dots" id="dots" aria-label="slides"></div>
 </div>
 
-  <script>
-/* Register demos here (path is relative to /public) */
+<script>
+/* ------------------------------------------------------------
+   Register demos here (paths are relative to /public)
+------------------------------------------------------------- */
 const DEMOS = [
   { name: "smoke",          href: "demos/smoke.html",          desc: "RAF sanity check (dot + trails)" },
   { name: "swarm",          href: "demos/swarm.html",          desc: "600–800 agents, obvious motion" },
-  { name: "verse-seed-min", href: "demos/verse_seed_min.html", desc: "paste → shape/feel change" },
+  { name: "verse-seed-min", href: "demos/verse_seed_min.html", desc: "paste → lexicon → change" },
 ];
 
+/* Elements */
 const frame   = document.getElementById('demoFrame');
 const titleEl = document.getElementById('demoTitle');
 const descEl  = document.getElementById('demoDesc');
 const dotsEl  = document.getElementById('dots');
+const stage   = document.getElementById('stage');
 
-let idx = 0, touchX = 0, touchY = 0, dragging = false;
+/* State */
+let idx = 0;
 
-function load(i){
-  idx = (i + DEMOS.length) % DEMOS.length;
+/* Utilities */
+function clamp(i){ return (i + DEMOS.length) % DEMOS.length; }
+function load(i, {pushHash=true} = {}){
+  idx = clamp(i);
   const d = DEMOS[idx];
   frame.src = d.href;
   titleEl.textContent = d.name;
   descEl.textContent  = d.desc;
   renderDots();
+  if (pushHash) location.hash = '#'+d.name;
 }
-
 function renderDots(){
-  dotsEl.innerHTML = DEMOS.map((_,i)=>
-    `<span class="dot ${i===idx?'active':''}" data-i="${i}"></span>`
+  dotsEl.innerHTML = DEMOS.map((d,i)=>
+    `<span class="dot ${i===idx?'active':''}" data-i="${i}" title="${d.name}"></span>`
   ).join('');
 }
 
-function next(){ load(idx+1); }
-function prev(){ load(idx-1); }
-
-/* Click a dot to jump */
+/* Dots click */
 dotsEl.addEventListener('click', e=>{
   const t = e.target.closest('.dot'); if(!t) return;
   load(parseInt(t.dataset.i,10));
 });
 
-/* Arrow keys */
+/* Keyboard */
 addEventListener('keydown', e=>{
-  if(e.key === 'ArrowRight') next();
-  if(e.key === 'ArrowLeft')  prev();
+  if (e.key === 'ArrowRight') load(idx+1);
+  else if (e.key === 'ArrowLeft') load(idx-1);
 });
 
-/* Pointer swipe (horizontal threshold, ignore vertical scrolls) */
-addEventListener('pointerdown', e=>{
-  dragging = true; touchX = e.clientX; touchY = e.clientY;
-});
-addEventListener('pointerup', e=>{
-  if(!dragging) return; dragging = false;
-  const dx = e.clientX - touchX, dy = Math.abs(e.clientY - touchY);
-  if(dy > Math.abs(dx)) return;           // treat vertical as scroll, not swipe
-  if(dx < -40) next(); else if(dx > 40) prev();
+/* Touch/pointer swipe with small momentum */
+let dragging=false, x0=0, y0=0, t0=0, vx=0;
+stage.addEventListener('pointerdown', e=>{
+  dragging=true; x0=e.clientX; y0=e.clientY; t0=performance.now(); vx=0;
+  stage.setPointerCapture(e.pointerId);
+},{passive:true});
+stage.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const t=performance.now(), dt=Math.max(1, t - t0);
+  vx = (e.clientX - x0) / dt;          // px per ms
+},{passive:true});
+stage.addEventListener('pointerup', e=>{
+  if(!dragging) return; dragging=false;
+  const dx=e.clientX - x0, dy=Math.abs(e.clientY - y0);
+  const swipe = Math.abs(dx) > 40 && dy < Math.abs(dx)*0.7;
+  const momentum = Math.abs(vx) > 0.35; // quick flick
+  if (swipe || momentum){
+    if (dx < 0) load(idx+1); else load(idx-1);
+  }
+},{passive:true});
+
+/* Hash routing (optional direct links) */
+function findByName(name){
+  const i = DEMOS.findIndex(d => d.name.toLowerCase() === name.toLowerCase());
+  return i<0 ? 0 : i;
+}
+addEventListener('hashchange', ()=>{
+  const name = location.hash.replace('#','').trim();
+  if(name) load(findByName(name), {pushHash:false});
 });
 
-/* Initial load */
-load(0);
-</script>
-
-const grid = document.getElementById('grid');
-grid.innerHTML = demos.map(([name, href, desc]) => `
-  <a class="card" href="${href}">
-    <div class="name">${name}</div>
-    <div class="desc">${desc}</div>
-  </a>
-`).join('');
+/* First load */
+(function init(){
+  const name = location.hash.replace('#','').trim();
+  load(name ? findByName(name) : 0);
+})();
 </script>
 </body>
 </html>
-
-/* Swipe stage and info bar */
-.stage { position: fixed; inset: 0; background: var(--bg, #000); }
-iframe.demo { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
-
-.infobar {
-  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  border: 1px solid var(--line); border-radius: var(--r-lg);
-  background: var(--panel); backdrop-filter: blur(8px) saturate(1.05);
-  padding: 10px 12px;
-}
-.infobar .title { font-weight: 700; letter-spacing: .2px; }
-.infobar .sub   { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.dots { display: flex; gap: 8px; align-items: center; }
-.dot  { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--line); background: transparent; opacity: .7; }
-.dot.active { background: #fff; opacity: 1; }
-
-@media (max-width: 480px) {
-  .infobar { padding: 9px 10px; }
-}
