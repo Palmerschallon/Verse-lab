@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Verse Lab — Demos</title>
+<link rel="stylesheet" href="./style.css">
+<style>
+  /* Minimal page chrome; prefer tokens from style.css if present */
+  :root { color-scheme: dark; }
+  body{margin:0;background:var(--bg,#000);color:var(--ink,#fff);
+       font:16px/1.5 var(--font-ui,-apple-system,system-ui,Segoe UI,Roboto);}
+  header{max-width:960px;margin:24px auto 8px;padding:0 16px}
+  h1{margin:0 0 6px;font:600 18px var(--font-ui,-apple-system,system-ui);}
+  p.sub{margin:0;color:#a4acb5}
+  main{max-width:960px;margin:12px auto 48px;padding:0 16px;
+       display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  a.card{display:block;text-decoration:none;color:inherit;
+         border:1px solid rgba(255,255,255,.14);border-radius:12px;
+         background:rgba(255,255,255,.03);padding:14px 16px}
+  a.card:hover{background:rgba(255,255,255,.06)}
+  .name{font-weight:600}
+  .desc{margin-top:4px;color:#a4acb5;font-size:13px}
+  footer{max-width:960px;margin:0 auto 28px;padding:0 16px;color:#8a93a0;font-size:12px}
+  code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Verse Lab — runnable demos</h1>
+  <p class="sub">Open in a browser (Safari/Chrome). On iOS, tap once to wake animations.</p>
+</header>
+
+<main id="grid"></main>
+
+<footer>
+  Add files in <code>public/demos/</code> and register them below. Vercel serves from <code>public/</code>.
+</footer>
+
+<script>
+/* Register demos here. Path is relative to /public. */
+const demos = [
+  ["smoke",          "demos/smoke.html",          "RAF sanity check (dot + trails)"],
+  ["swarm",          "demos/swarm.html",          "600–800 agents, obvious motion"],
+  ["verse-seed-min", "demos/verse_seed_min.html", "paste → shape/feel change"],
+  // Add more:
+  // ["orb-cell v2","demos/verse_orb_cell_v2.html","orb membrane prototype"],
+];
+
+const grid = document.getElementById('grid');
+grid.innerHTML = demos.map(([name, href, desc]) => `
+  <a class="card" href="${href}">
+    <div class="name">${name}</div>
+    <div class="desc">${desc}</div>
+  </a>
+`).join('');
+</script>
+</body>
+</html>
